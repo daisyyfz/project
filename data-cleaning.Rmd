@@ -1,0 +1,32 @@
+---
+title: "Final project draft"
+author: "Daisy Fang"
+date: "2/16/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load-packages}
+library(tidyverse)
+```
+
+```{r load-data}
+springfield <- readxl::read_excel("Springfield.xlsx")
+```
+
+```{r anonymize-data}
+# anonymize client
+pallets <- springfield %>% 
+  filter(cust_code == 550) %>% 
+  select(-cust_name, -cust_code, -phy_key, -product_key, -facilityid) %>% 
+  mutate(item_desc = str_remove(item_desc, "BE "),
+         item_desc = str_replace(item_desc, " BE ", " "),
+         item_desc = str_remove(item_desc, "BEF "))
+
+write_csv(pallets, "pallets.csv")
+
+```
+

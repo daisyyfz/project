@@ -1,0 +1,40 @@
+---
+title: "Draft"
+author: "Daisy Fang"
+date: "2/17/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load-packages}
+library(tidyverse)
+```
+
+```{r clean-data}
+# item_category
+pallets <- pallets %>% 
+  mutate(item_category = case_when(str_detect(item_desc, "MASHED|MASH|MSHD|SR CRM & CHIVE POTAS") ~ "MASHED POTATO",
+                                   str_detect(item_desc, "POT|WEDGE") ~ "OTHER POTATO",
+                                   str_detect(item_desc, "MACARONI|MAC") ~ "MAC & CHEESE",
+                                   str_detect(item_desc, "LINKS|LINK|LIN|PROLL|ROLL|PATTIES|PATTIS|PAT|PTY|PORK SAUS") ~ "SAUSAGE",
+                                   TRUE ~ "OTHERS"))
+# proportion check
+pallets %>% 
+  count(item_category) %>% 
+  summarize(item_category, n, prop = n/sum(n))
+
+# check counts to create categories
+pallets %>% 
+  filter(item_category == "OTHERS") %>% 
+  filter(!str_detect(item_desc, "LINKS|LINK|LIN|PROLL|ROLL|PATTIES|PATTIS|PAT|PTY|PORK SAUS")) %>% 
+  count(item_desc) %>% 
+  arrange(desc(n))
+```
+
+```{r}
+
+```
+
