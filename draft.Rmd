@@ -11,27 +11,91 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r load-packages}
 library(tidyverse)
+library(lubridate)
+```
+
+```{r load-data}
+all_pallets <- pallets %>% 
+  select(-c("item_code", "lot_key", "b_date", "julian_date", "code_date", "location_in", "location_per_mast", "status_per_mast", "date_in_scan", "batch_in", "earliest_date_scan", "latest_date_scan", "location_out", "batch_out", "pallet_height", "room_in", "room_out", "room_mast", "room_any", "days_duration", "time_to_beg_refdate", "time_to_refdate", "pct_in_period"))
+
+write_csv(all_pallets, "all_pallets.csv")
 ```
 
 ```{r clean-data}
 # item_category
-pallets <- pallets %>% 
+all_pallets <- all_pallets %>% 
   mutate(item_category = case_when(str_detect(item_desc, "MASHED|MASH|MSHD|SR CRM & CHIVE POTAS") ~ "MASHED POTATO",
                                    str_detect(item_desc, "POT|WEDGE") ~ "OTHER POTATO",
                                    str_detect(item_desc, "MACARONI|MAC") ~ "MAC & CHEESE",
                                    str_detect(item_desc, "LINKS|LINK|LIN|PROLL|ROLL|PATTIES|PATTIS|PAT|PTY|PORK SAUS") ~ "SAUSAGE",
                                    TRUE ~ "OTHERS"))
 # proportion check
-pallets %>% 
+all_pallets %>% 
   count(item_category) %>% 
   summarize(item_category, n, prop = n/sum(n))
 
 # check counts to create categories
-pallets %>% 
+all_pallets %>% 
   filter(item_category == "OTHERS") %>% 
   filter(!str_detect(item_desc, "LINKS|LINK|LIN|PROLL|ROLL|PATTIES|PATTIS|PAT|PTY|PORK SAUS")) %>% 
   count(item_desc) %>% 
   arrange(desc(n))
+```
+
+```{r}
+sausage <- all_pallets %>% 
+  filter(item_category == "SAUSAGE") %>% 
+  filter(orig_qty == qty_picked) %>% 
+  select(item_category, date_in, latest_date) %>% 
+  mutate(date_in = date(date_in),
+         #year_week_in = paste(year(date_in), " W", week(date_in), sep = ""),
+         date_out = date(latest_date),
+         #year_week_out = paste(year(date_out), " W", week(date_out), sep = "")
+         ) %>% 
+  select(-latest_date)
+
+
+sausage %>% 
+  mutate(week = week(date_out),
+         month = month(date_out),
+         year = as.factor(year(date_out))) %>% 
+  group_by(year, week) %>% 
+  count() %>% 
+  ggplot(aes(x = week, y = n, color = year)) +
+  geom_line()
+
+test <- all_pallets %>% 
+  filter(orig_qty == qty_picked) %>% 
+  select(item_category, date_in, latest_date) %>% 
+  mutate(date_in = date(date_in),
+         #year_week_in = paste(year(date_in), " W", week(date_in), sep = ""),
+         date_out = date(latest_date),
+         #year_week_out = paste(year(date_out), " W", week(date_out), sep = "")
+         ) %>% 
+  select(-latest_date)
+
+test %>% 
+  mutate(week = week(date_out),
+         month = month(date_out),
+         year = as.factor(year(date_out))) %>% 
+  group_by(year, week, item_category) %>% 
+  count() %>% 
+  ggplot(aes(x = week, y = n, color = year)) +
+  geom_line() +
+  facet_grid(item_category ~.)
+
+test_cnt <- sausage %>% 
+  mutate(week = week(date_out),
+         month = month(date_out),
+         year = as.factor(year(date_out))) %>% 
+  group_by(year, week) %>% 
+  count() %>% 
+  filter(year == 2020)
+
+# one week autocorrelation
+acf(test_cnt$n)
+
+test_cnt %>% diff(lag=4)
 ```
 
 ```{r}
