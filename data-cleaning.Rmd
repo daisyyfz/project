@@ -27,6 +27,12 @@ pallets <- springfield %>%
          item_desc = str_remove(item_desc, "BEF "))
 
 write_csv(pallets, "pallets.csv")
+```
 
+```{r write-data}
+all_pallets <- pallets %>% 
+  select(-c("item_code", "lot_key", "b_date", "julian_date", "code_date", "location_in", "location_per_mast", "status_per_mast", "date_in_scan", "batch_in", "earliest_date_scan", "latest_date_scan", "location_out", "batch_out", "pallet_height", "room_in", "room_out", "room_mast", "room_any", "days_duration", "time_to_beg_refdate", "time_to_refdate", "pct_in_period"))
+
+write_csv(all_pallets, "all_pallets.csv")
 ```
 

@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
 ```
 
 ```{r load-packages}
@@ -15,10 +15,7 @@ library(lubridate)
 ```
 
 ```{r load-data}
-all_pallets <- pallets %>% 
-  select(-c("item_code", "lot_key", "b_date", "julian_date", "code_date", "location_in", "location_per_mast", "status_per_mast", "date_in_scan", "batch_in", "earliest_date_scan", "latest_date_scan", "location_out", "batch_out", "pallet_height", "room_in", "room_out", "room_mast", "room_any", "days_duration", "time_to_beg_refdate", "time_to_refdate", "pct_in_period"))
-
-write_csv(all_pallets, "all_pallets.csv")
+all_pallets <- read_csv("all_pallets.csv")
 ```
 
 ```{r clean-data}
@@ -34,13 +31,16 @@ all_pallets %>%
   count(item_category) %>% 
   summarize(item_category, n, prop = n/sum(n))
 
-# check counts to create categories
-all_pallets %>% 
-  filter(item_category == "OTHERS") %>% 
-  filter(!str_detect(item_desc, "LINKS|LINK|LIN|PROLL|ROLL|PATTIES|PATTIS|PAT|PTY|PORK SAUS")) %>% 
-  count(item_desc) %>% 
-  arrange(desc(n))
+# # check counts to create categories
+# all_pallets %>% 
+#   filter(item_category == "OTHERS") %>% 
+#   filter(!str_detect(item_desc, "LINKS|LINK|LIN|PROLL|ROLL|PATTIES|PATTIS|PAT|PTY|PORK SAUS")) %>% 
+#   count(item_desc) %>% 
+#   arrange(desc(n))
 ```
+
+
+
 
 ```{r}
 sausage <- all_pallets %>% 
@@ -54,7 +54,7 @@ sausage <- all_pallets %>%
          ) %>% 
   select(-latest_date)
 
-
+# sausage time series
 sausage %>% 
   mutate(week = week(date_out),
          month = month(date_out),
@@ -84,6 +84,11 @@ test %>%
   geom_line() +
   facet_grid(item_category ~.)
 
+
+
+```
+
+```{r time-series}
 test_cnt <- sausage %>% 
   mutate(week = week(date_out),
          month = month(date_out),
@@ -94,11 +99,5 @@ test_cnt <- sausage %>%
 
 # one week autocorrelation
 acf(test_cnt$n)
-
-test_cnt %>% diff(lag=4)
-```
-
-```{r}
-
 ```
 

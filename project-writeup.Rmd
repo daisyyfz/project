@@ -1,0 +1,154 @@
+---
+title: "Final Project Draft"
+author: "Daisy Fang"
+date: "2/26/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE )
+```
+
+```{r load-packages}
+library(tidyverse)
+library(lubridate)
+library(ggpubr)
+```
+
+```{r load-data}
+all_pallets <- read_csv("all_pallets.csv")
+```
+
+# 1 Introduction
+The COVID-19 pandemic has undoubtedly been disruptive for businesses and individuals in many ways. The rapid spread of the virus led to unprecedented lockdown and travel restrictions, both of which strongly impacted consumer behavior. Anecdotally, the frenzy of toilet-paper buying left many shelves unstocked and the fluctuation in import and export availability internationally drove up meat prices substantially. Scientifically, these seemingly irrational buying behaviors can be explained. In an unexpected crisis like the COVID-19 pandemic, the sense of losing control often leads to a perception of scarcity, which is strongly linked to panic buying behaviors as shown by previous Psychology studies ([citation](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7202808/), [citation](https://theconversation.com/coronavirus-why-people-are-panic-buying-loo-roll-and-how-to-stop-it-133115)). Panic buying was especially evident for storable staples and household supplies in the initial stages of COVID-19 ([citation](https://voxeu.org/article/spending-dynamics-and-panic-buying-during-covid-19-first-wave)) based on a study of household level scanner data. 
+
+While consumers experience frustration with their shopping experience, the supply chain faced challenges like never before. This analysis aims to investigate the impact of grocery panic buying on a specific food supplier at one warehouse with implication for future crisis management both on the part of food suppliers and warehousing companies. 
+
+The general research question is whether or not demand for major food item categories has changed in 2020 as compared to 2019. In particular, three main goals of the analysis are to 1) characterize COVID panic buying through the demand of mashed potatoes across the two years, 2) examine if the demand of mashed potatoes is affected by seasonality, and 3) explore and quantify how suppliers and warehouses can predict future demand.
+
+## 1.1 Data
+The data used in this analysis is obtained from Lineage Logistics, the world’s largest refrigerated warehousing company. It includes all pallet transactions for one large customer between 2019 – 2020 for a temperature-controlled warehouse in Springfield, OH. Among all Lineage customers, the food supplier in this current dataset experienced the largest panic-buying during the COVID-19 pandemic. 
+
+There are a total of 426,632 observations in the anonymized dataset, each denoting a single pallet that has passed through the warehouse during the time period of interest. These pallets were stored in the Springfield, OH warehouse for at least one day between 2019 – 2020. Information recorded for each pallet that is relevant to the analysis includes item description, first and last date in the warehouse and pallet weight. The date variables allow calculation of the output amount on a daily basis, which is used as a proxy measure for the market demand over the past two years in this time series analysis. 
+
+The data is not intended to be made publicly available or distributed. Only the course instructor and students who are assigned to peer review the analysis can gain access to the raw data, and they are prohibited from using or further disclosing the information. They are also not allowed to identify the customer or products included in the data.
+
+## 1.2 Exploratory Data Analysis
+
+```{r item-category}
+all_pallets <- all_pallets %>% 
+  mutate(item_category = case_when(str_detect(item_desc, "MASHED|MASH|MSHD|SR CRM & CHIVE POTAS") ~ "MASHED POTATOES",
+                                   str_detect(item_desc, "POT|WEDGE") ~ "OTHER POTATO",
+                                   str_detect(item_desc, "MACARONI|MAC") ~ "MAC & CHEESE",
+                                   str_detect(item_desc, "LINKS|LINK|LIN|PROLL|ROLL|PATTIES|PATTIS|PAT|PTY|PORK SAUS") ~ "SAUSAGE",
+                                   TRUE ~ "OTHERS"))
+
+pallets_dates <- all_pallets %>% 
+  #filter(item_category == "MASHED POTATOES") %>% 
+  filter(orig_qty == qty_picked) %>% 
+  select(item_category, date_in, latest_date) %>% 
+  mutate(date_in = date(date_in),
+         date_out = date(latest_date)) %>% 
+  mutate(week = week(date_out),
+         month = month(date_out),
+         year = as.factor(year(date_out))) %>% 
+  select(-latest_date)
+```
+
+```{r eval=FALSE}
+# prop by category
+all_pallets %>% 
+  group_by(item_category) %>% 
+  summarize(count = n()) %>% 
+  ungroup() %>% 
+  summarize(item_category, count, prop = round(count/sum(count),4))
+
+# total mashed potato weights
+all_pallets %>% 
+  filter(item_category == "MASHED POTATOES") %>% 
+  mutate(product_weight = pallet_weight - 30) %>% 
+  summarize(total_weight = sum(product_weight))
+```
+
+For this specific food supplier, 48.36% of all pallets carried mashed potatoes products, this is equivalent to almost 290 million lbs of mashed potatoes not accounting for the pallet weight. Other major product categories include sausage products (24.60%), Mac & Cheese (16.36%) and other potatoes products (9.40%). 
+
+Looking at the number of pallets containing mashed potatoes shipped out of the warehouse by week, there are stark differences between 2019 and 2020 in the first half of the year. The first spike came in the week of March 16th, 2020 right after President Trump declared COVID-19 a National Emergency on March 13th [citation](https://www.ajmc.com/view/a-timeline-of-covid19-developments-in-2020). Another spike came in early-May. This directly follows President Trump announced his decision to stop the U.S. funding to the WHO on April 14th and Ohio’s extended stay-at-home order was announced on April 30th [citation](https://www.daytondailynews.com/news/local/timeline-coronavirus-prompts-orders-changing-everyday-life-ohio/gpnVSADPxZxMltlDVyqKEP/). Interestingly but not surprisingly, there are two other spikes in November and December, corresponding to the holiday seasons of Thanksgiving and Christmas. 
+
+```{r mashed-potatoes, fig.height = 4, fig.width = 8, fig.align='center'}
+sausage <- all_pallets %>% 
+  filter(item_category == "MASHED POTATOES") %>% 
+  filter(orig_qty == qty_picked) %>% 
+  select(item_category, date_in, latest_date) %>% 
+  mutate(date_in = date(date_in),
+         date_out = date(latest_date),
+         ) %>% 
+  select(-latest_date)
+
+# mashed potatoes time series
+pallets_dates %>%
+  filter(item_category == "MASHED POTATOES") %>% 
+  filter(week < 53) %>% 
+  group_by(year, week) %>% 
+  count() %>% 
+  ggplot(aes(x = week, y = n, color = year)) +
+  scale_color_manual(values = c("dodgerblue2", "coral2")) +
+  geom_line() +
+  geom_point() +
+  theme_light() +
+  theme(legend.position="bottom") +
+  labs(title = "Mashed Potatoes Demand Spiked in Initial Stages of COVID-19",
+       subtitle = "as well as durign the holiday season in both 2019 and 2020",
+       y = "Number of pallets", x = "Week", color = "Year")
+
+# pallets_dates %>% 
+#   mutate(mashed = case_when(item_category == "MASHED POTATOES" ~ "Mashed potatoes",
+#                             TRUE ~ "Others")) %>% 
+#   group_by(year, month, mashed) %>% 
+#   summarize(total = n()) %>% 
+#   ggplot(aes(x = month, y = total, fill = mashed)) +
+#   geom_bar(stat = "identity", position = "fill") +
+#   facet_grid(. ~ year)
+
+```
+
+Similarly, the same observations can be made for the other slightly less common food categories.  
+
+```{r sausage-macncheese, fig.height = 4, fig.width = 8}
+sausage <- pallets_dates %>%
+  filter(item_category == "SAUSAGE") %>% 
+  group_by(year, week) %>% 
+  filter(week < 53) %>% 
+  count() %>% 
+  ggplot(aes(x = week, y = n, color = year)) +
+  geom_line() +
+  geom_point() +
+  theme_light() +
+  theme(legend.position="bottom") +
+  scale_color_manual(values = c("dodgerblue2", "coral2")) +
+  labs(title = "The Same Trend Holds for Sausage Products...",
+       y = "Number of pallets", x = "Week", color = "Year")
+
+macncheese <- pallets_dates %>%
+  filter(item_category == "MAC & CHEESE") %>% 
+  group_by(year, week) %>% 
+  filter(week < 53) %>% 
+  count() %>% 
+  ggplot(aes(x = week, y = n, color = year)) +
+  geom_line() +
+  geom_point() +
+  scale_color_manual(values = c("dodgerblue2", "coral2")) +
+  theme_light() +
+  theme(legend.position="bottom") +
+  labs(title = "... As Well As Mac & Cheese",
+       y = "Number of pallets", x = "Week", color = "Year")
+
+#https://aosmith.rbind.io/2019/05/13/small-multiples-plot/
+#http://www.sthda.com/english/articles/24-ggpubr-publication-ready-plots/81-ggplot2-easy-way-to-mix-multiple-graphs-on-the-same-page/
+ggarrange(sausage + theme(axis.title.x = element_blank()), macncheese , # list of plots
+          common.legend = T, # COMMON LEGEND
+          legend = "bottom", # legend position
+          align = "hv", # Align them both, horizontal and vertical
+          nrow = 2)  # number of rows
+```
+
+
