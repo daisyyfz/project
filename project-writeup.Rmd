@@ -75,15 +75,6 @@ For this specific food supplier, 48.36% of all pallets carried mashed potatoes p
 Looking at the number of pallets containing mashed potatoes shipped out of the warehouse by week, there are stark differences between 2019 and 2020 in the first half of the year. The first spike came in the week of March 16th, 2020 right after President Trump declared COVID-19 a National Emergency on March 13th [citation](https://www.ajmc.com/view/a-timeline-of-covid19-developments-in-2020). Another spike came in early-May. This directly follows President Trump announced his decision to stop the U.S. funding to the WHO on April 14th and Ohio’s extended stay-at-home order was announced on April 30th [citation](https://www.daytondailynews.com/news/local/timeline-coronavirus-prompts-orders-changing-everyday-life-ohio/gpnVSADPxZxMltlDVyqKEP/). Interestingly but not surprisingly, there are two other spikes in November and December, corresponding to the holiday seasons of Thanksgiving and Christmas. 
 
 ```{r mashed-potatoes, fig.height = 4, fig.width = 8, fig.align='center'}
-sausage <- all_pallets %>% 
-  filter(item_category == "MASHED POTATOES") %>% 
-  filter(orig_qty == qty_picked) %>% 
-  select(item_category, date_in, latest_date) %>% 
-  mutate(date_in = date(date_in),
-         date_out = date(latest_date),
-         ) %>% 
-  select(-latest_date)
-
 # mashed potatoes time series
 pallets_dates %>%
   filter(item_category == "MASHED POTATOES") %>% 
@@ -99,6 +90,10 @@ pallets_dates %>%
   labs(title = "Mashed Potatoes Demand Spiked in Initial Stages of COVID-19",
        subtitle = "as well as durign the holiday season in both 2019 and 2020",
        y = "Number of pallets", x = "Week", color = "Year")
+
+potatoes <- pallets_dates %>% 
+  filter(item_category == "MASHED POTATOES") %>% 
+  filter(week < 53)
 
 # pallets_dates %>% 
 #   mutate(mashed = case_when(item_category == "MASHED POTATOES" ~ "Mashed potatoes",
@@ -151,4 +146,37 @@ ggarrange(sausage + theme(axis.title.x = element_blank()), macncheese , # list o
           nrow = 2)  # number of rows
 ```
 
+***
+```{r acf}
+week20 <- potatoes %>% 
+  group_by(year, week) %>% 
+  summarize(cnt = n()) %>% 
+  filter(year == 2020)
+
+acf(week20$cnt)
+
+week19 <- potatoes %>% 
+  group_by(year, week) %>% 
+  summarize(cnt = n()) %>% 
+  filter(year == 2019)
+
+acf(week19$cnt)
+
+potatoes %>% 
+  group_by(year, month) %>% 
+  summarize(cnt = n())
+```
+
+```{r}
+# early-COVID: panic buying
+# post-COVID: lower consumption 
+potatoes %>% 
+  group_by(year, week) %>% 
+  summarize(cnt = n()) %>% 
+  pivot_wider(names_from = year, values_from = cnt) %>% 
+  rename(second = '2020', first = '2019') %>% 
+  mutate(diff = second - first) %>% 
+  ggplot(aes(x = week, y = diff)) +
+  geom_line()
+```
 
