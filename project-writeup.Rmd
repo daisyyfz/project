@@ -153,30 +153,47 @@ week20 <- potatoes %>%
   summarize(cnt = n()) %>% 
   filter(year == 2020)
 
+day20 <- potatoes %>% 
+  group_by(year, date_out) %>% 
+  summarize(cnt = n()) %>% 
+  filter(year == 2020)
+
 acf(week20$cnt)
+acf(day20$cnt)
 
 week19 <- potatoes %>% 
   group_by(year, week) %>% 
   summarize(cnt = n()) %>% 
   filter(year == 2019)
 
-acf(week19$cnt)
+day19 <- potatoes %>% 
+  group_by(year, date_out) %>% 
+  summarize(cnt = n()) %>% 
+  filter(year == 2019)
 
-potatoes %>% 
-  group_by(year, month) %>% 
-  summarize(cnt = n())
+acf(week19$cnt)
+acf(day19$cnt)
+
+
+library(forecast)
+
+day19$cnt %>% diff() %>% ggtsdisplay(main="")
+
+(fit <- arima(day20$cnt, order=c(7,0,0)))
+
+plot.ts(week20$cnt)
 ```
 
 ```{r}
 # early-COVID: panic buying
 # post-COVID: lower consumption 
 potatoes %>% 
-  group_by(year, week) %>% 
+  group_by(year, month) %>% 
   summarize(cnt = n()) %>% 
   pivot_wider(names_from = year, values_from = cnt) %>% 
   rename(second = '2020', first = '2019') %>% 
   mutate(diff = second - first) %>% 
-  ggplot(aes(x = week, y = diff)) +
+  ggplot(aes(x = month, y = diff)) +
   geom_line()
 ```
 
