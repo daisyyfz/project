@@ -41,53 +41,6 @@ all_pallets %>%
 
 
 
-
-```{r}
-sausage <- all_pallets %>% 
-  filter(item_category == "SAUSAGE") %>% 
-  filter(orig_qty == qty_picked) %>% 
-  select(item_category, date_in, latest_date) %>% 
-  mutate(date_in = date(date_in),
-         #year_week_in = paste(year(date_in), " W", week(date_in), sep = ""),
-         date_out = date(latest_date),
-         #year_week_out = paste(year(date_out), " W", week(date_out), sep = "")
-         ) %>% 
-  select(-latest_date)
-
-# sausage time series
-sausage %>% 
-  mutate(week = week(date_out),
-         month = month(date_out),
-         year = as.factor(year(date_out))) %>% 
-  group_by(year, week) %>% 
-  count() %>% 
-  ggplot(aes(x = week, y = n, color = year)) +
-  geom_line()
-
-test <- all_pallets %>% 
-  filter(orig_qty == qty_picked) %>% 
-  select(item_category, date_in, latest_date) %>% 
-  mutate(date_in = date(date_in),
-         #year_week_in = paste(year(date_in), " W", week(date_in), sep = ""),
-         date_out = date(latest_date),
-         #year_week_out = paste(year(date_out), " W", week(date_out), sep = "")
-         ) %>% 
-  select(-latest_date)
-
-test %>% 
-  mutate(week = week(date_out),
-         month = month(date_out),
-         year = as.factor(year(date_out))) %>% 
-  group_by(year, week, item_category) %>% 
-  count() %>% 
-  ggplot(aes(x = week, y = n, color = year)) +
-  geom_line() +
-  facet_grid(item_category ~.)
-
-
-
-```
-
 ```{r time-series}
 test_cnt <- sausage %>% 
   mutate(week = week(date_out),
@@ -101,108 +54,93 @@ test_cnt <- sausage %>%
 acf(test_cnt$n)
 ```
 
-### Goal 1: difference during COVID
+### get mashed potato data
 
-
-### Goal 2: general seasonality
 ```{r}
-sausage %>% 
+mashedpotato <- all_pallets %>% 
+  filter(item_category == "MASHED POTATO") %>% 
+  filter(orig_qty == qty_picked) %>% 
+  select(item_category, date_in, latest_date) %>% 
+  mutate(date_in = date(date_in),
+         #year_week_in = paste(year(date_in), " W", week(date_in), sep = ""),
+         date_out = date(latest_date),
+         #year_week_out = paste(year(date_out), " W", week(date_out), sep = "")
+         ) %>% 
+  select(-latest_date) %>% 
   group_by(date_out) %>% 
   count() %>% 
-  ggplot(aes(x = date_out, y = n)) +
-  geom_line()
-
-test <- sausage %>% 
-  group_by(date_out) %>% 
-  count()
-
-test_week <- test %>% 
   mutate(week = week(date_out),
          month = month(date_out),
          year = as.factor(year(date_out))) %>% 
+  filter(week != 53)
+
+mashedpotato
+
+```
+
+
+### Goal 1: difference during COVID
+```{r t-tests}
+n19 <- mashedpotato %>% 
+  filter(month == 3, year == 2019) %>% 
+  select(n, year)
+
+n19 <- n19$n
+
+n20 <- mashedpotato %>% 
+  filter(month == 3, year == 2020) %>% 
+  select(n, year)
+
+n20 <- n20$n
+
+t.test(n19, n20)
+
+diff <- n20-n19
+
+plot.ts(diff)
+
+
+
+# Wilcox test
+wilcox.test(n19, n20, paired = TRUE)
+
+```
+
+### Goal 2: general seasonality
+```{r decomposition}
+test_week <- mashedpotato %>% 
   group_by(year, week) %>% 
   summarize(n = sum(n))
 
-test_month <- test %>% 
-  mutate(week = week(date_out),
-         month = month(date_out),
-         year = as.factor(year(date_out))) %>% 
+test_month <- mashedpotato %>% 
   group_by(year, month) %>% 
   summarize(n = sum(n))
 
 # 2019-2020 by day
-plot.ts(test$n)
+plot.ts(mashedpotato$n)
 # 2019-2020 by week
 plot.ts(test_week$n)
 # 2019-2020 by month
 plot.ts(test_month$n)
 
-### 
+#
 # additive decomposition
+# https://rstudio-pubs-static.s3.amazonaws.com/84226_ad792383c050483bbae4676bc76a4038.html
 test_week <- ts(test_week$n, frequency = 52)
 test_week_decomp <- decompose(test_week)
 plot(test_week_decomp)
 # minus seasonality
 plot(test_week - test_week_decomp$seasonal)
 
-```
-
-```{r t-tests}
-
-n19 <- test %>% 
-  mutate(week = week(date_out),
-         month = month(date_out),
-         year = as.factor(year(date_out))) %>% 
-  filter(month == 3, year == 2019) %>% 
-  select(n, year)
-
-n19 <- n19$n
-
-n20 <- test %>% 
-  mutate(week = week(date_out),
-         month = month(date_out),
-         year = as.factor(year(date_out))) %>% 
-  filter(month == 3, year == 2020) %>% 
-  select(n, year)
-
-n20 <- n20$n
-
-diff <- n20-n19
-
-
-pivot<-test %>% 
-  mutate(week = week(date_out),
-         month = month(date_out),
-         year = as.factor(year(date_out))) %>% 
-  filter(month == 3)
-
-pivot <- pivot[c("n", "year")]
-  
-compare <- pivot %>% 
-  pivot_wider(names_from = year, values_from = n) %>% 
-  unnest() %>% 
-  rename(second = '2020',
-         first = '2019') %>% 
-  mutate(diff = second - first)
-  
-compare %>% 
-  ggplot(aes(x = diff)) +
-  geom_histogram(color = "white", binwidth = 20) +
-  theme_light()
-
-# t-test
-t.test(compare$diff, mu=0)
-# shapiro-wilk normality test
-# http://www.sthda.com/english/wiki/normality-test-in-r
-shapiro.test(compare$diff)
-
-
-# KS test
-library(dgof)
-ks.test(n19, n20)
+# additive decomposition
+test_day <- ts(mashedpotato$n, frequency = 361)
+test_day_decomp <- decompose(test_day)
+plot(test_day_decomp)
+# minus seasonality
 
 ```
 
+### Goal 3: future demand
 
 
 

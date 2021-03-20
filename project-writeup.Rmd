@@ -159,6 +159,7 @@ day20 <- potatoes %>%
   filter(year == 2020)
 
 acf(week20$cnt)
+pacf(week20$cnt)
 acf(day20$cnt)
 
 week19 <- potatoes %>% 
@@ -172,6 +173,7 @@ day19 <- potatoes %>%
   filter(year == 2019)
 
 acf(week19$cnt)
+pacf(week19$cnt)
 acf(day19$cnt)
 
 
@@ -179,10 +181,15 @@ library(forecast)
 
 day19$cnt %>% diff() %>% ggtsdisplay(main="")
 
-(fit <- arima(day20$cnt, order=c(7,0,0)))
+(fit <- arima(week20$cnt, order=c(1,0,0)))
 
 plot.ts(week20$cnt)
 ```
+
+
+
+
+
 
 ```{r}
 # early-COVID: panic buying
