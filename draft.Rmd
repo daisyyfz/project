@@ -41,7 +41,7 @@ all_pallets %>%
 
 
 
-```{r time-series}
+```{r time-series, eval=FALSE}
 test_cnt <- sausage %>% 
   mutate(week = week(date_out),
          month = month(date_out),
@@ -123,7 +123,6 @@ plot.ts(test_week$n)
 # 2019-2020 by month
 plot.ts(test_month$n)
 
-#
 # additive decomposition
 # https://rstudio-pubs-static.s3.amazonaws.com/84226_ad792383c050483bbae4676bc76a4038.html
 test_week <- ts(test_week$n, frequency = 52)

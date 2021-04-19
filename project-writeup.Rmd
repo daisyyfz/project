@@ -68,6 +68,12 @@ all_pallets %>%
   filter(item_category == "MASHED POTATOES") %>% 
   mutate(product_weight = pallet_weight - 30) %>% 
   summarize(total_weight = sum(product_weight))
+
+
+all_pallets %>% 
+  count(item_category) %>% 
+  ggplot(aes(y = item_category, fill = item_category)) +
+  geom_bar()
 ```
 
 For this specific food supplier, 48.36% of all pallets carried mashed potatoes products, this is equivalent to almost 290 million lbs of mashed potatoes not accounting for the pallet weight. Other major product categories include sausage products (24.60%), Mac & Cheese (16.36%) and other potatoes products (9.40%). 
@@ -88,7 +94,7 @@ pallets_dates %>%
   theme_light() +
   theme(legend.position="bottom") +
   labs(title = "Mashed Potatoes Demand Spiked in Initial Stages of COVID-19",
-       subtitle = "as well as durign the holiday season in both 2019 and 2020",
+       subtitle = "as well as during the holiday season in both 2019 and 2020",
        y = "Number of pallets", x = "Week", color = "Year")
 
 potatoes <- pallets_dates %>% 
@@ -105,6 +111,28 @@ potatoes <- pallets_dates %>%
 #   facet_grid(. ~ year)
 
 ```
+
+```{r x-axis-test,  fig.height = 4, fig.width = 8, fig.align='center'}
+# mashed potatoes time series
+pallets_dates %>%
+  filter(item_category == "MASHED POTATOES") %>% 
+  filter(week < 53) %>% 
+  group_by(year, week) %>% 
+  count() %>% 
+  ggplot(aes(x = week, y = n, color = year)) +
+  scale_color_manual(values = c("dodgerblue2", "coral2")) +
+  geom_line() +
+  geom_point() +
+  theme_light() +
+  theme(legend.position="bottom") +
+  scale_x_continuous(breaks = c(1, 5, 9, 14, 18, 23, 27, 31, 36, 40, 44, 49),
+                     labels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")) +
+  labs(title = "Mashed Potatoes Demand Spiked in Initial Stages of COVID-19",
+       subtitle = "as well as during the holiday season in both 2019 and 2020",
+       y = "Number of pallets", x = "Month", color = "Year")
+```
+
+
 
 Similarly, the same observations can be made for the other slightly less common food categories.  
 
@@ -194,13 +222,19 @@ plot.ts(week20$cnt)
 ```{r}
 # early-COVID: panic buying
 # post-COVID: lower consumption 
+# difference
+
 potatoes %>% 
   group_by(year, month) %>% 
   summarize(cnt = n()) %>% 
   pivot_wider(names_from = year, values_from = cnt) %>% 
   rename(second = '2020', first = '2019') %>% 
   mutate(diff = second - first) %>% 
-  ggplot(aes(x = month, y = diff)) +
-  geom_line()
+  ggplot(aes(x = as.integer(month), y = diff)) +
+  geom_line() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
+  theme_light() +
+  scale_x_continuous(breaks = c(1,2,3,4,5,6,7,8,9,10,11,12)) +
+  labs(x = "Month", y = "Difference", title = "The Absolute Difference in Mashed Potatoes Demand Decreased Over the Year")
 ```
 

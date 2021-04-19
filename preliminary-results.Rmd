@@ -1,0 +1,250 @@
+---
+title: "preliminary-results"
+author: "Daisy Fang"
+date: "4/14/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load-packages}
+library(tidyverse)
+library(lubridate)
+library(ggpubr)
+library(broom)
+library(purrr)
+```
+
+```{r load-data}
+all_pallets <- read_csv("all_pallets.csv")
+```
+
+
+```{r item-category}
+all_pallets <- all_pallets %>% 
+  mutate(item_category = case_when(str_detect(item_desc, "MASHED|MASH|MSHD|SR CRM & CHIVE POTAS") ~ "MASHED POTATOES",
+                                   str_detect(item_desc, "POT|WEDGE") ~ "OTHER POTATO",
+                                   str_detect(item_desc, "MACARONI|MAC") ~ "MAC & CHEESE",
+                                   str_detect(item_desc, "LINKS|LINK|LIN|PROLL|ROLL|PATTIES|PATTIS|PAT|PTY|PORK SAUS") ~ "SAUSAGE",
+                                   TRUE ~ "OTHERS"))
+
+pallets_dates <- all_pallets %>% 
+  #filter(item_category == "MASHED POTATOES") %>% 
+  filter(orig_qty == qty_picked) %>% 
+  select(item_category, date_in, latest_date) %>% 
+  mutate(date_in = date(date_in),
+         date_out = date(latest_date)) %>% 
+  mutate(week = week(date_out),
+         month = month(date_out),
+         year = as.factor(year(date_out))) %>% 
+  select(-latest_date)
+```
+
+```{r potatoes}
+potatoes <- pallets_dates %>% 
+  filter(item_category == "MASHED POTATOES") %>% 
+  filter(week < 53)
+```
+
+```{r}
+mashedpotato <- all_pallets %>% 
+  filter(item_category == "MASHED POTATOES") %>% 
+  filter(orig_qty == qty_picked) %>% 
+  select(item_category, date_in, latest_date) %>% 
+  mutate(date_in = date(date_in),
+         #year_week_in = paste(year(date_in), " W", week(date_in), sep = ""),
+         date_out = date(latest_date),
+         #year_week_out = paste(year(date_out), " W", week(date_out), sep = "")
+         ) %>% 
+  select(-latest_date) %>% 
+  group_by(date_out) %>% 
+  count() %>% 
+  mutate(week = week(date_out),
+         month = month(date_out),
+         year = as.factor(year(date_out))) %>% 
+  filter(week != 53)
+```
+
+
+
+## COVID Panic Buying
+
+```{r t-test, eval=FALSE}
+jan19 <- mashedpotato %>% 
+  filter(month == 1, year == 2019) %>% 
+  select(n, year)
+
+jan20 <- mashedpotato %>% 
+  filter(month == 1, year == 2020) %>% 
+  select(n, year)
+
+t.test(jan19$n, jan20$n, paired = TRUE)
+
+feb19 <- mashedpotato %>% 
+  filter(month == 2, year == 2019) %>% 
+  select(n, year)
+
+feb20 <- mashedpotato %>% 
+  filter(month == 2, year == 2020) %>% 
+  select(n, year)
+
+t.test(feb19$n, feb20$n[1:28], paired = TRUE)
+
+mar19 <- mashedpotato %>% 
+  filter(month == 3, year == 2019) %>% 
+  select(n, year)
+
+mar20 <- mashedpotato %>% 
+  filter(month == 3, year == 2020) %>% 
+  select(n, year)
+
+t.test(mar19$n, mar20$n, paired = TRUE)
+
+apr19 <- mashedpotato %>% 
+  filter(month == 4, year == 2019) %>% 
+  select(n, year)
+
+apr20 <- mashedpotato %>% 
+  filter(month == 4, year == 2020) %>% 
+  select(n, year)
+
+t.test(apr19$n, apr20$n, paired = TRUE)
+
+may19 <- mashedpotato %>% 
+  filter(month == 5, year == 2019) %>% 
+  select(n, year)
+
+may20 <- mashedpotato %>% 
+  filter(month == 5, year == 2020) %>% 
+  select(n, year)
+
+t.test(may19$n, may20$n, paired = TRUE)
+
+jun19 <- mashedpotato %>% 
+  filter(month == 6, year == 2019) %>% 
+  select(n, year)
+
+jun20 <- mashedpotato %>% 
+  filter(month == 6, year == 2020) %>% 
+  select(n, year)
+
+t.test(jun19$n, jun20$n, paired = TRUE)
+
+jul19 <- mashedpotato %>% 
+  filter(month == 7, year == 2019) %>% 
+  select(n, year)
+
+jul20 <- mashedpotato %>% 
+  filter(month == 7, year == 2020) %>% 
+  select(n, year)
+
+t.test(jul19$n, jul20$n, paired = TRUE)
+
+aug19 <- mashedpotato %>% 
+  filter(month == 8, year == 2019) %>% 
+  select(n, year)
+
+aug20 <- mashedpotato %>% 
+  filter(month == 8, year == 2020) %>% 
+  select(n, year)
+
+t.test(aug19$n, aug20$n, paired = TRUE)
+
+sep19 <- mashedpotato %>% 
+  filter(month == 9, year == 2019) %>% 
+  select(n, year)
+
+sep20 <- mashedpotato %>% 
+  filter(month == 9, year == 2020) %>% 
+  select(n, year)
+
+t.test(sep19$n, sep20$n, paired = TRUE)
+
+oct19 <- mashedpotato %>% 
+  filter(month == 10, year == 2019) %>% 
+  select(n, year)
+
+oct20 <- mashedpotato %>% 
+  filter(month == 10, year == 2020) %>% 
+  select(n, year)
+
+t.test(oct19$n, oct20$n, paired = TRUE)
+
+nov19 <- mashedpotato %>% 
+  filter(month == 11, year == 2019) %>% 
+  select(n, year)
+
+nov20 <- mashedpotato %>% 
+  filter(month == 11, year == 2020) %>% 
+  select(n, year)
+
+t.test(nov19$n[1:29], nov20$n, paired = TRUE)
+
+dec19 <- mashedpotato %>% 
+  filter(month == 12, year == 2019) %>% 
+  select(n, year)
+
+dec20 <- mashedpotato %>% 
+  filter(month == 12, year == 2020) %>% 
+  select(n, year)
+
+t.test(dec19$n[1:28], dec20$n, paired = TRUE)
+```
+
+
+```{r kable, eval=FALSE}
+tab <- map_df(list(t1, t2, t3), tidy) %>%
+  rename(t_statistic = statistic,
+         p_value = p.value,
+         degree_of_freedom = parameter) %>% 
+  mutate(conf_int = paste(round(conf.low, 2), round(conf.high,2), sep = ", ")) %>% 
+  mutate(conf_int = paste("(", conf_int, ")")) %>% 
+  select(t_statistic, degree_of_freedom, p_value, conf_int)
+
+tab
+
+kable(tab, digits = 3)
+```
+
+
+```{r wilcox, eval=FALSE}
+# Wilcox test
+wilcox.test(n19, n20, paired = TRUE)
+```
+
+## Serial Correlation
+
+```{r acf}
+week20 <- potatoes %>% 
+  group_by(year, week) %>% 
+  summarize(pallet_count = n()) %>% 
+  filter(year == 2020)
+
+day20 <- potatoes %>% 
+  group_by(year, date_out) %>% 
+  summarize(pallet_count = n()) %>% 
+  filter(year == 2020)
+
+week20acf <- acf(week20$pallet_count)
+plot(week20acf, main = "ACF Plot for Weekly Pallet Count in 2020")
+day20acf <- acf(day20$pallet_count)
+plot(day20acf, main = "ACF Plot for Daily Pallet Count in 2020")
+
+week19 <- potatoes %>% 
+  group_by(year, week) %>% 
+  summarize(pallet_count = n()) %>% 
+  filter(year == 2019)
+
+day19 <- potatoes %>% 
+  group_by(year, date_out) %>% 
+  summarize(pallet_count = n()) %>% 
+  filter(year == 2019)
+
+week19acf <- acf(week19$pallet_count)
+plot(week19acf, main = "ACF Plot for Weekly Pallet Count in 2019")
+day19acf <- acf(day19$pallet_count)
+plot(day19acf, main = "ACF Plot for Daily Pallet Count in 2019")
+```
+
