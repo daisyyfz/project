@@ -123,6 +123,8 @@ pallets_dates %>%
   scale_color_manual(values = c("dodgerblue2", "coral2")) +
   geom_line() +
   geom_point() +
+  annotate("text", x=17.3, y=3400, label= "March 16th, 2020") + 
+  annotate("text", x=23.5, y=2700, label= "May 4th, 2020") + 
   theme_light() +
   theme(legend.position="bottom") +
   scale_x_continuous(breaks = c(1, 5, 9, 14, 18, 23, 27, 31, 36, 40, 44, 49),
@@ -148,7 +150,7 @@ sausage <- pallets_dates %>%
   theme_light() +
   theme(legend.position="bottom") +
   scale_color_manual(values = c("dodgerblue2", "coral2")) +
-  labs(title = "The Same Trend Holds for Sausage Products...",
+  labs(title = "The same trend holds for sausage products...",
        y = "Number of pallets", x = "Week", color = "Year")
 
 macncheese <- pallets_dates %>%
@@ -162,7 +164,7 @@ macncheese <- pallets_dates %>%
   scale_color_manual(values = c("dodgerblue2", "coral2")) +
   theme_light() +
   theme(legend.position="bottom") +
-  labs(title = "... As Well As Mac & Cheese",
+  labs(title = "... as well as macaroni and cheese",
        y = "Number of pallets", x = "Week", color = "Year")
 
 #https://aosmith.rbind.io/2019/05/13/small-multiples-plot/
