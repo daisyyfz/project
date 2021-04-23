@@ -1,0 +1,415 @@
+---
+title: "final-project-report"
+author: "Daisy Fang"
+date: "4/23/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+```{r load-packages}
+library(tidyverse)
+library(lubridate)
+library(ggpubr)
+```
+
+```{r load-data}
+all_pallets <- read_csv("all_pallets.csv")
+```
+
+# 1 Introduction
+
+## 1.1 Background
+
+## 1.2 Research Questions and Goals
+
+## 1.3 Data
+
+## 1.4 Exploratory Data Analysis
+```{r item-category}
+all_pallets <- all_pallets %>% 
+  mutate(item_category = case_when(str_detect(item_desc, "MASHED|MASH|MSHD|SR CRM & CHIVE POTAS") ~ "MASHED POTATOES",
+                                   str_detect(item_desc, "POT|WEDGE") ~ "OTHER POTATO",
+                                   str_detect(item_desc, "MACARONI|MAC") ~ "MAC & CHEESE",
+                                   str_detect(item_desc, "LINKS|LINK|LIN|PROLL|ROLL|PATTIES|PATTIS|PAT|PTY|PORK SAUS") ~ "SAUSAGE",
+                                   TRUE ~ "OTHERS"))
+
+pallets_dates <- all_pallets %>% 
+  #filter(item_category == "MASHED POTATOES") %>% 
+  filter(orig_qty == qty_picked) %>% 
+  select(item_category, date_in, latest_date) %>% 
+  mutate(date_in = date(date_in),
+         date_out = date(latest_date)) %>% 
+  mutate(week = week(date_out),
+         month = month(date_out),
+         year = as.factor(year(date_out))) %>% 
+  select(-latest_date)
+```
+
+```{r summary-stat, eval=FALSE}
+# prop by category
+all_pallets %>% 
+  group_by(item_category) %>% 
+  summarize(count = n()) %>% 
+  ungroup() %>% 
+  summarize(item_category, count, prop = round(count/sum(count),4))
+
+# total mashed potato weights
+all_pallets %>% 
+  filter(item_category == "MASHED POTATOES") %>% 
+  mutate(product_weight = pallet_weight - 30) %>% 
+  summarize(total_weight = sum(product_weight))
+```
+
+```{r mashed-potatoes-eda,  fig.height = 4, fig.width = 8, fig.align='center'}
+# mashed potatoes time series
+pallets_dates %>%
+  filter(item_category == "MASHED POTATOES") %>% 
+  filter(week < 53) %>% 
+  group_by(year, week) %>% 
+  count() %>% 
+  ggplot(aes(x = week, y = n, color = year)) +
+  scale_color_manual(values = c("dodgerblue2", "coral2")) +
+  geom_line() +
+  geom_point() +
+  annotate("text", x=17.3, y=3400, label= "March 16th, 2020") + 
+  annotate("text", x=23.5, y=2700, label= "May 4th, 2020") + 
+  theme_light() +
+  theme(legend.position="bottom") +
+  scale_x_continuous(breaks = c(1, 5, 9, 14, 18, 23, 27, 31, 36, 40, 44, 49),
+                     labels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")) +
+  labs(title = "Mashed Potatoes Demand Spiked in Initial Stages of COVID-19",
+       subtitle = "as well as during the holiday season in both 2019 and 2020",
+       y = "Number of pallets", x = "Month", color = "Year")
+```
+
+```{r sausage-macncheese, fig.height = 4, fig.width = 8, fig.align='center'}
+sausage <- pallets_dates %>%
+  filter(item_category == "SAUSAGE") %>% 
+  group_by(year, week) %>% 
+  filter(week < 53) %>% 
+  count() %>% 
+  ggplot(aes(x = week, y = n, color = year)) +
+  geom_line() +
+  geom_point() +
+  theme_light() +
+  theme(legend.position="bottom") +
+  scale_x_continuous(breaks = c(1, 5, 9, 14, 18, 23, 27, 31, 36, 40, 44, 49),
+                     labels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")) +
+  scale_color_manual(values = c("dodgerblue2", "coral2")) +
+  labs(title = "The same trend holds for sausage products...",
+       y = "Number of pallets", x = "Week", color = "Year")
+
+macncheese <- pallets_dates %>%
+  filter(item_category == "MAC & CHEESE") %>% 
+  group_by(year, week) %>% 
+  filter(week < 53) %>% 
+  count() %>% 
+  ggplot(aes(x = week, y = n, color = year)) +
+  geom_line() +
+  geom_point() +
+  scale_color_manual(values = c("dodgerblue2", "coral2")) +
+  theme_light() +
+  theme(legend.position="bottom") +
+  scale_x_continuous(breaks = c(1, 5, 9, 14, 18, 23, 27, 31, 36, 40, 44, 49),
+                     labels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")) +
+  labs(title = "... as well as macaroni and cheese",
+       y = "Number of pallets", x = "Month", color = "Year")
+
+#https://aosmith.rbind.io/2019/05/13/small-multiples-plot/
+#http://www.sthda.com/english/articles/24-ggpubr-publication-ready-plots/81-ggplot2-easy-way-to-mix-multiple-graphs-on-the-same-page/
+ggarrange(sausage + theme(axis.title.x = element_blank()), macncheese , # list of plots
+          common.legend = T, # COMMON LEGEND
+          legend = "bottom", # legend position
+          align = "hv", # Align them both, horizontal and vertical
+          nrow = 2)  # number of rows
+```
+
+# 2 Methodology
+
+## 2.1 COVID-19 Panic Buying
+
+## 2.2 Seasonality
+
+## 2.3 Serial Correlation
+
+# 3 Results
+
+## 3.1 COVID-19 Panic Buying
+```{r abs-diff, fig.height = 4, fig.width = 8, fig.align='center'}
+potatoes <- pallets_dates %>% 
+  filter(item_category == "MASHED POTATOES") %>% 
+  filter(week < 53)
+
+potatoes %>% 
+  group_by(year, month) %>% 
+  summarize(cnt = n()) %>% 
+  pivot_wider(names_from = year, values_from = cnt) %>% 
+  rename(second = '2020', first = '2019') %>% 
+  mutate(diff = second - first) %>% 
+  ggplot(aes(x = as.integer(month), y = diff)) +
+  geom_line() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
+  theme_light() +
+  scale_x_continuous(breaks = c(1,2,3,4,5,6,7,8,9,10,11,12),
+                     labels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")) +
+  labs(x = "Month", y = "Difference", title = "The Absolute Difference in Mashed Potatoes Demand Decreased Over the Year",
+       subtitle = "2019 weekly demand subtracted from 2020 weekly demand")
+```
+
+```{r paired-t-test, eval=FALSE}
+jan19 <- mashedpotato %>% 
+  filter(month == 1, year == 2019) %>% 
+  select(n, year)
+
+jan20 <- mashedpotato %>% 
+  filter(month == 1, year == 2020) %>% 
+  select(n, year)
+
+t.test(jan19$n, jan20$n, paired = TRUE)
+
+feb19 <- mashedpotato %>% 
+  filter(month == 2, year == 2019) %>% 
+  select(n, year)
+
+feb20 <- mashedpotato %>% 
+  filter(month == 2, year == 2020) %>% 
+  select(n, year)
+
+t.test(feb19$n, feb20$n[1:28], paired = TRUE)
+
+mar19 <- mashedpotato %>% 
+  filter(month == 3, year == 2019) %>% 
+  select(n, year)
+
+mar20 <- mashedpotato %>% 
+  filter(month == 3, year == 2020) %>% 
+  select(n, year)
+
+t.test(mar19$n, mar20$n, paired = TRUE)
+
+apr19 <- mashedpotato %>% 
+  filter(month == 4, year == 2019) %>% 
+  select(n, year)
+
+apr20 <- mashedpotato %>% 
+  filter(month == 4, year == 2020) %>% 
+  select(n, year)
+
+t.test(apr19$n, apr20$n, paired = TRUE)
+
+may19 <- mashedpotato %>% 
+  filter(month == 5, year == 2019) %>% 
+  select(n, year)
+
+may20 <- mashedpotato %>% 
+  filter(month == 5, year == 2020) %>% 
+  select(n, year)
+
+t.test(may19$n, may20$n, paired = TRUE)
+
+jun19 <- mashedpotato %>% 
+  filter(month == 6, year == 2019) %>% 
+  select(n, year)
+
+jun20 <- mashedpotato %>% 
+  filter(month == 6, year == 2020) %>% 
+  select(n, year)
+
+t.test(jun19$n, jun20$n, paired = TRUE)
+
+jul19 <- mashedpotato %>% 
+  filter(month == 7, year == 2019) %>% 
+  select(n, year)
+
+jul20 <- mashedpotato %>% 
+  filter(month == 7, year == 2020) %>% 
+  select(n, year)
+
+t.test(jul19$n, jul20$n, paired = TRUE)
+
+aug19 <- mashedpotato %>% 
+  filter(month == 8, year == 2019) %>% 
+  select(n, year)
+
+aug20 <- mashedpotato %>% 
+  filter(month == 8, year == 2020) %>% 
+  select(n, year)
+
+t.test(aug19$n, aug20$n, paired = TRUE)
+
+sep19 <- mashedpotato %>% 
+  filter(month == 9, year == 2019) %>% 
+  select(n, year)
+
+sep20 <- mashedpotato %>% 
+  filter(month == 9, year == 2020) %>% 
+  select(n, year)
+
+t.test(sep19$n, sep20$n, paired = TRUE)
+
+oct19 <- mashedpotato %>% 
+  filter(month == 10, year == 2019) %>% 
+  select(n, year)
+
+oct20 <- mashedpotato %>% 
+  filter(month == 10, year == 2020) %>% 
+  select(n, year)
+
+t.test(oct19$n, oct20$n, paired = TRUE)
+
+nov19 <- mashedpotato %>% 
+  filter(month == 11, year == 2019) %>% 
+  select(n, year)
+
+nov20 <- mashedpotato %>% 
+  filter(month == 11, year == 2020) %>% 
+  select(n, year)
+
+t.test(nov19$n[1:29], nov20$n, paired = TRUE)
+
+dec19 <- mashedpotato %>% 
+  filter(month == 12, year == 2019) %>% 
+  select(n, year)
+
+dec20 <- mashedpotato %>% 
+  filter(month == 12, year == 2020) %>% 
+  select(n, year)
+
+t.test(dec19$n[1:28], dec20$n, paired = TRUE)
+```
+
+## 3.2 Seasonality
+
+```{r decomposition, fig.height=6, fig.width=8, fig.align='center'}
+week_cnt <- potatoes %>% 
+  group_by(year, week) %>% 
+  summarize(n = sum(n()))
+
+# additive decomposition
+# https://rstudio-pubs-static.s3.amazonaws.com/84226_ad792383c050483bbae4676bc76a4038.html
+week_cnt_ts <- ts(week_cnt$n, frequency = 52)
+week_decomp <- decompose(week_cnt_ts)
+
+# https://stackoverflow.com/questions/43054417/how-to-customize-title-axis-labels-etc-in-a-plot-of-a-decomposed-time-series
+# Get the time values for the time series
+Time = attributes(week_cnt)[[1]]
+
+# Convert td to data frame
+dat = cbind(Time, with(week_decomp, data.frame(Observed=x, Trend=trend, Seasonality=seasonal, Random=random)))
+
+ggplot(gather(dat, component, value, -Time), aes(Time, value)) +
+  facet_grid(component ~ ., scales="free_y") +
+  geom_line() +
+  theme_bw() +
+  scale_x_continuous(breaks = c(1, 26, 53, 79, 100),
+                     labels = c("Jan 19", "Jun 19","Jan 20", "Jun 20", "Dec 20")) +
+  labs(y = "", x="Time",
+       title = "Decomposed Mashed Potatoes Weekly Demand Time Series") +
+  theme(plot.title=element_text(hjust=0.5))
+```
+
+## 3.3 Serial Correlation
+
+```{r acf, fig.height=4, fig.align='center'}
+week20 <- potatoes %>% 
+  group_by(year, week) %>% 
+  summarize(pallet_count = n()) %>% 
+  filter(year == 2020)
+
+day20 <- potatoes %>% 
+  group_by(year, date_out) %>% 
+  summarize(pallet_count = n()) %>% 
+  filter(year == 2020)
+
+week19 <- potatoes %>% 
+  group_by(year, week) %>% 
+  summarize(pallet_count = n()) %>% 
+  filter(year == 2019)
+
+day19 <- potatoes %>% 
+  group_by(year, date_out) %>% 
+  summarize(pallet_count = n()) %>% 
+  filter(year == 2019)
+
+par(mfrow = c(1, 2))
+acf(day19$pallet_count, main = "2019 Daily Pallet Count")
+acf(day20$pallet_count, main = "2020 Daily Pallet Count")
+```
+
+```{r acf-2, fig.height=4, fig.align='center'}
+par(mfrow = c(1, 2))
+acf(week19$pallet_count, main = "2019 Weekly Pallet Count")
+acf(week20$pallet_count, main = "2020 Weekly Pallet Count")
+```
+
+
+## 4 Discussion
+
+## 4.1 Implications for the Supply Chain
+
+## 4.2 Strengths and Weaknesses
+
+## 4.3 Future Directions
+
+# 5 Appendix 
+
+## 5.1 Paired t-test Assumptions
+
+```{r QQplot, eval=FALSE}
+ggqqplot(jan19$n-jan20$n, main = "Normality Assumption is Satisfied for the January Paired t-test")
+ggqqplot(feb19$n-feb20$n, main = "Normality Assumption is Satisfied for the February Paired t-test")
+ggqqplot(mar19$n-mar20$n, main = "Normality Assumption is Satisfied for the March Paired t-test")
+ggqqplot(apr19$n-apr20$n, main = "Normality Assumption is Satisfied for the April Paired t-test")
+ggqqplot(may19$n-may20$n, main = "Normality Assumption is Satisfied for the May Paired t-test")
+ggqqplot(jun19$n-jun20$n, main = "Normality Assumption is Satisfied for the June Paired t-test")
+ggqqplot(jul19$n-jul20$n, main = "Normality Assumption is Satisfied for the July Paired t-test")
+ggqqplot(aug19$n-aug20$n, main = "Normality Assumption is Satisfied for the August Paired t-test")
+ggqqplot(sep19$n-sep20$n, main = "Normality Assumption is Satisfied for the September Paired t-test")
+ggqqplot(oct19$n-oct20$n, main = "Normality Assumption is Satisfied for the October Paired t-test")
+ggqqplot(nov19$n-nov20$n, main = "Normality Assumption is Satisfied for the November Paired t-test")
+ggqqplot(dec19$n-dec20$n, main = "Normality Assumption is Satisfied for the December Paired t-test")
+```
+
+## 5.2 Sensitivity Analyses
+
+### 5.2.1 COVID-19 Panic Buying
+
+```{r wilcoxon-test, eval=FALSE}
+wilcox.test(jan19$n, jan20$n, paired = TRUE)
+
+wilcox.test(feb19$n, feb20$n[1:28], paired = TRUE)
+
+wilcox.test(mar19$n, mar20$n, paired = TRUE)
+
+wilcox.test(apr19$n, apr20$n, paired = TRUE)
+
+wilcox.test(may19$n, may20$n, paired = TRUE)
+
+wilcox.test(jun19$n, jun20$n, paired = TRUE)
+
+wilcox.test(jul19$n, jul20$n, paired = TRUE)
+
+wilcox.test(aug19$n, aug20$n, paired = TRUE)
+
+wilcox.test(sep19$n, sep20$n, paired = TRUE)
+
+wilcox.test(oct19$n, oct20$n, paired = TRUE)
+
+wilcox.test(nov19$n[1:29], nov20$n, paired = TRUE)
+
+wilcox.test(dec19$n[1:28], dec20$n, paired = TRUE)
+```
+
+### 5.2.2 Serial Correlation
+
+```{r acf-sensitivity}
+week20postcovid <- week20 %>% 
+  filter(week >= 22)
+
+acf(week20postcovid$pallet_count, main = "ACF Plot for Weekly Pallet Count After May 2020")
+```
+
+
