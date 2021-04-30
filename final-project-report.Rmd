@@ -1,7 +1,7 @@
 ---
-title: "final-project-report"
+title: "COVID-19 Grocery Panic Buying"
 author: "Daisy Fang"
-date: "4/23/2021"
+date: "4/30/2021"
 output: pdf_document
 ---
 
@@ -22,12 +22,24 @@ all_pallets <- read_csv("all_pallets.csv")
 # 1 Introduction
 
 ## 1.1 Background
+The COVID-19 pandemic has undoubtedly been disruptive for businesses and individuals in many ways. The rapid spread of the virus led to unprecedented lockdown and travel restrictions, both of which strongly impacted consumer behavior. Anecdotally, the frenzy of toilet-paper and paper towel buying left many shelves unstocked. Nearly half of the grocery stores in the US were completely out of supplies, and many sanitizing products shortages have lasted until 2021 [1]. Scientifically, these seemingly irrational buying behaviors can be explained. In an unexpected crisis like the COVID-19 pandemic, consumers experience a lack of control. They then act to compensate by completing a simple task or fulfilling a basic need through shopping to alleviate the anxiety [2]. Another concept, perceived scarcity is operating simultaneously. This heuristic leads us to believe that “what is less common is more valuable”, and increases our risk-taking propensity across social, financial and other domains [3, 4]. In the context of COVID-19, perceived scarcity makes consumers less financially responsible and splurge on items on low stock in store. Together, perceived lack of control and perceived scarcity motivates an urgency to buy and are strongly linked to panic buying and hoarding behaviors as shown by previous Psychology studies [5]. 
+
+One of the few recent research on spending dynamics during COVID-19 was conducted in the United Kingdom. Researchers analyzed household-level receipt data from a nationally representative sample of over seventeen thousand households and found that panic buying was especially evident for storable staples in the initial stages of COVID-19 [6]. There was a large spike in spending in the month preceding the lockdown, where daily spending on staples such as canned goods, pasta, rice and grains rose over 80%. Another notable result from this research showed that the increase in quantity of purchase was evident across all socioeconomic groups, indicating that the rise in demand is likely not driven by a few extreme spenders and that hoarding was a widespread phenomenon affecting almost everyone in the society. 
 
 ## 1.2 Research Questions and Goals
+While much previous literature has been focused on understanding consumer behavior from the demand side, little attention is paid to implications for the supply side. As consumers experience frustration with their shopping experience, the supply chain faced challenges like never before. Specifically, food suppliers have a hard time producing enough raw materials with the sudden surge in sales, and it is challenging for warehouse facilities to ensure a sufficient yet not overflowing amount of product in stock. Given the unforeseen nature of the pandemic, this analysis aims to investigate the impact of grocery panic buying on a specific food supplier at one warehouse with ramification for future crisis management both on the part of food suppliers and warehousing companies. 
+
+The general research question is whether or not demand for major food item categories has changed in 2020 as compared to 2019. In particular, three main goals of the analysis are to 1) characterize COVID panic buying through the demand of mashed potatoes across the two years, 2) examine if the demand of mashed potatoes is affected by seasonality, and 3) explore and quantify whether demand has serial correlation to inform demand predictive modeling. 
 
 ## 1.3 Data
+The data used in this analysis are inventory information from Lineage Logistics, the world’s largest refrigerated warehousing company. It includes all pallet transactions for one large customer between 2019 – 2020 for a temperature-controlled warehouse in Springfield, OH. Among all Lineage customers, the food supplier in this current dataset experienced the largest panic-buying during the COVID-19 pandemic and therefore a typical case study subject. However, there are concerns with generalizability as discussed later in the analysis.  
+
+There are a total of 426,632 observations in the anonymized dataset, each denoting a single pallet that has passed through the warehouse during the time period of interest. These pallets were stored in the Springfield, OH warehouse for at least one day between 2019 – 2020. Information recorded for each pallet that is relevant to the analysis includes item description, first and last date in the warehouse and pallet weight. The date variables allow calculation of the output amount on a daily basis, which is used as a proxy measure for the market demand over the past two years in this time series analysis. 
+
+The data were obtained through a previous working relationship with Lineage Logistics, and therefore is not intended to be made publicly available or distributed. Only the course instructor can gain access to the anonymized raw data, and they are prohibited from using or further disclosing the information. They are also not allowed to identify the customer or products included in the data using external information.
 
 ## 1.4 Exploratory Data Analysis
+
 ```{r item-category}
 all_pallets <- all_pallets %>% 
   mutate(item_category = case_when(str_detect(item_desc, "MASHED|MASH|MSHD|SR CRM & CHIVE POTAS") ~ "MASHED POTATOES",
@@ -62,6 +74,9 @@ all_pallets %>%
   mutate(product_weight = pallet_weight - 30) %>% 
   summarize(total_weight = sum(product_weight))
 ```
+For this specific food supplier, 48.36% of all pallets carried mashed potatoes products, this is equivalent to almost 290 million pounds not accounting for the pallet weight, or 750 million dollars worth of mashed potatoes . Other major product categories include sausage products (24.60%), Mac & Cheese (16.36%) and other potatoes products (9.40%). This analysis will focus on mashed potatoes because it is not only the main product category for this food supplier, but also a staple item that is subject to panic buying as suggested by previous research [6].
+
+Looking at the number of pallets containing mashed potatoes shipped out of the warehouse by week, we see that in a normal year such as 2019, the demand fluctuated between 1500 to 2000 pallets per week for most of the year until spikes during Thanksgiving and Christmas times in November and December. However, there are stark differences between 2019 and 2020 in the first half of the year. The first spike came in the week of March 16th, 2020 right after President Trump declared COVID-19 a National Emergency on March 13th [7]. Another spike came in early-May. This directly follows Ohio’s extended stay-at-home order was announced on April 30th [8]. We still see a spike for the holiday season later on in 2020, though the demand was slightly lower as compared to 2019. Note that the x-axis tick marks are not evenly distributed because the start of a week does not always align with the start of a month.
 
 ```{r mashed-potatoes-eda,  fig.height = 4, fig.width = 8, fig.align='center'}
 # mashed potatoes time series
@@ -84,6 +99,7 @@ pallets_dates %>%
        subtitle = "as well as during the holiday season in both 2019 and 2020",
        y = "Number of pallets", x = "Month", color = "Year")
 ```
+Similarly, the same observations can be made for the other slightly less common food categories. 
 
 ```{r sausage-macncheese, fig.height = 4, fig.width = 8, fig.align='center'}
 sausage <- pallets_dates %>%
@@ -130,14 +146,26 @@ ggarrange(sausage + theme(axis.title.x = element_blank()), macncheese , # list o
 # 2 Methodology
 
 ## 2.1 COVID-19 Panic Buying
+The exploratory visualizations illustrated clear spikes in mashed potato demand in March and May of 2020 as compared to 2019. Firstly, in order to characterize these spikes, the difference in total weekly pallet outputs between the two years was plotted to directly visualize the discrepancy over time. This helped to identify when the change in demand is drastic enough to stand out from random noise at other times. Afterwards, a paired t-test was conducted to investigate the discrepancy more rigorously. The daily output number of pallets carrying mashed potato products was used for the t-test for the most granularity. Specifically, data were partitioned by month so that twelve paired t-tests could be separately conducted to determine if there is a statistically significant difference in mean monthly mashed potato demand for each month of the year. The motivation behind checking all months rather than just March and May alone is to account for seasonal effect in the time series data. In particular, by comparing and interpreting the p-values across all months, conclusions can be drawn on whether the difference across 2019 and 2020 is specific to select time periods but not others. For instance, if the difference in average demand is statistically significant for all twelve months, then the differences corresponding to COVID-19 panic buying does not stand out as much as previously inferred from the exploratory visualizations. There are several assumptions for the paired t-test, which are normality, the lack of outliers and sampling from two related groups or matched pairs [9]. Each assumption was checked in the Appendix. 
+
+We recognize that by considering many hypothesis tests simultaneously, the issue of multiple comparisons arises since the probability of making a Type I error is inflated if we use the significance level of 0.05 for each individual test [10]. To control for multiple tests, the analysis used the Bonferroni-Holm correction to adjust the significance threshold. It strongly controls for the family-wise rate so that the probability of making one or more Type I errors when performing 12 paired t-tests is lower than 0.05 [11, 12]. The Bonferroni-Holm method is chosen instead of the Bonferroni method because the latter is very conservative. By dividing the significance level by the total number of tests for all paired t-tests, the Bonferroni method provides strong family-wise error control. However, as the Bonferroni correction gives the maximum error rate, the method is very conservative and therefore reduces the power of the test [13].
+
+The paired t-test was preferred over several alternative choices. While the unpaired, or independent t-test could also be used to make inference on group mean differences, it is only appropriate for unrelated and independent groups. However, the current time series data have an order dependence between observations by nature [14]. The potential seasonality factor manifests in that the demand in mashed potato could rise and fall around the same time each year. A paired t-test was ideal for this analysis since it considers demand as the repeated measure of the same products of the food supplier over time. Furthermore, intervention time series analysis, which examines the impact of a particular change on the observed time series of outcome indicators, was also considered as a possibility [15]. While the COVID-19 pandemic could be considered an intervention on consumer behavior, the exact point of occurrence could not be accurately identified given data available since it was not a planned event [16]. In addition, the magnitude of demand during COVID-19 panic buying is similar to that of the winter holiday season, making it difficult for an intervention analysis to distinguish the effect of COVID-19 from a regular surge in demand. The Kolmogorov-Smirnov test was also considered to compare the two time series of 2019 and 2020, but it is most suitable for comparing a sample with a known probability distribution and existing literature does not suggest that the test has been used for other curves [17]. Finally, the Wilcoxon matched-pairs signed rank test is a nonparametric alternative to the paired t-test [18]. While the normality assumption for paired t-test holds based on the central limit theorem, the Wilcoxon test was used as a sensitivity analysis to verify t-test results [19].
 
 ## 2.2 Seasonality
+Given the time-dependent nature of the data, it is not appropriate to compare demand between different timepoints for the same series. As a result, the analysis opted to investigate seasonal variations visually instead of using hypothesis testing. Time series decomposition was used to describe seasonality trends within the data. Past literature has pointed out the importance of decomposing a time series into constituent subseries to understand latent components [20]. As done in Cleveland & Tiao, a time series is commonly broken down into stochastic trend, seasonal, and noise components [21]. The current analysis takes advantage of this method by decomposing the time series of mashed potato demand over the two years and examining the seasonality component specifically to see where the peaks are, if any. In conducting the decomposition, the analysis determined that the substituent components have an additive relationship. The additive decomposition was used instead of a multiplicative decomposition because the magnitude of the seasonal fluctuations does not vary with the time series [22]. Evidence of this can be found in the initial exploratory visualization, where the spikes around the winter holiday season in 2019 is not markedly higher than those in 2020. 
+
 
 ## 2.3 Serial Correlation
+In order to understand how total weekly demand of mashed potatoes is correlated with previous demand, the analysis utilized the autocorrelation function (ACF). ACF outputs the autocorrelation coefficient of a time series with its previous values at each lag. ACF plots were constructed for 2019 and 2020 data separately to compare a regular year against one that is deeply affected by COVID-19. Both daily and weekly demand are plotted and interpreted. Then, the significant lag time whose coefficient is above the threshold is identified from the ACF plots. The lag times for 2019 and 2020 were compared to inform what time interval is relevant if predictive models were to be built in future analysis. As a sensitivity analysis, ACF plot will be constructed for weeks after May 2020 to see whether the significant lag values change after removing data from the early stage of COVID-19.
+    
+The ACF plot is preferred over the partial autocorrelation function (PACF) plot because of its interpretability and relevance. Instead of finding correlations of the present data at different time points like ACF, PACF finds correlation between observations at two time points conditional on them being correlated to other observations [23]. However, for the interest of the research goal at hand, ACF allows interpretation of correlation between weekly demand and accounts for all components of the time series such as trend and seasonality while PACF does not [24]. While building a time series model such as the autoregressive integrated moving average (ARIMA) regression could help to quantify and explain the impact of previous demand, the current analysis opted out because of insufficient data. The dataset only includes two years of inventory information, one of which is severely affected by the pandemic. Without definitive knowledge on the short- and long-term effect of COVID-19 on consumption or enough previous data, the model will not be robust enough to draw conclusions about future demand.
 
 # 3 Results
 
 ## 3.1 COVID-19 Panic Buying
+The graph below is made from subtracting the weekly demand in 2019 from that in 2020. It’s clear that the demand for mashed potatoes was higher in 2020 than 2019 from January to mid-July except for one week, and it is lower for the rest of the year including the holiday season. 
+
 ```{r abs-diff, fig.height = 4, fig.width = 8, fig.align='center'}
 potatoes <- pallets_dates %>% 
   filter(item_category == "MASHED POTATOES") %>% 
@@ -159,7 +187,27 @@ potatoes %>%
        subtitle = "2019 weekly demand subtracted from 2020 weekly demand")
 ```
 
-```{r paired-t-test, eval=FALSE}
+```{r hyp-test-data}
+mashedpotato <- all_pallets %>% 
+  filter(item_category == "MASHED POTATOES") %>% 
+  filter(orig_qty == qty_picked) %>% 
+  select(item_category, date_in, latest_date) %>% 
+  mutate(date_in = date(date_in),
+         #year_week_in = paste(year(date_in), " W", week(date_in), sep = ""),
+         date_out = date(latest_date),
+         #year_week_out = paste(year(date_out), " W", week(date_out), sep = "")
+         ) %>% 
+  select(-latest_date) %>% 
+  group_by(date_out) %>% 
+  count() %>% 
+  mutate(week = week(date_out),
+         month = month(date_out),
+         year = as.factor(year(date_out))) %>% 
+  filter(week != 53)
+```
+
+
+```{r paired-t-test, eval=TRUE}
 jan19 <- mashedpotato %>% 
   filter(month == 1, year == 2019) %>% 
   select(n, year)
@@ -168,7 +216,7 @@ jan20 <- mashedpotato %>%
   filter(month == 1, year == 2020) %>% 
   select(n, year)
 
-t.test(jan19$n, jan20$n, paired = TRUE)
+t1 <- t.test(jan19$n, jan20$n, paired = TRUE)
 
 feb19 <- mashedpotato %>% 
   filter(month == 2, year == 2019) %>% 
@@ -178,7 +226,7 @@ feb20 <- mashedpotato %>%
   filter(month == 2, year == 2020) %>% 
   select(n, year)
 
-t.test(feb19$n, feb20$n[1:28], paired = TRUE)
+t2 <- t.test(feb19$n, feb20$n[1:28], paired = TRUE)
 
 mar19 <- mashedpotato %>% 
   filter(month == 3, year == 2019) %>% 
@@ -188,7 +236,7 @@ mar20 <- mashedpotato %>%
   filter(month == 3, year == 2020) %>% 
   select(n, year)
 
-t.test(mar19$n, mar20$n, paired = TRUE)
+t3 <- t.test(mar19$n, mar20$n, paired = TRUE)
 
 apr19 <- mashedpotato %>% 
   filter(month == 4, year == 2019) %>% 
@@ -198,7 +246,7 @@ apr20 <- mashedpotato %>%
   filter(month == 4, year == 2020) %>% 
   select(n, year)
 
-t.test(apr19$n, apr20$n, paired = TRUE)
+t4 <- t.test(apr19$n, apr20$n, paired = TRUE)
 
 may19 <- mashedpotato %>% 
   filter(month == 5, year == 2019) %>% 
@@ -208,7 +256,7 @@ may20 <- mashedpotato %>%
   filter(month == 5, year == 2020) %>% 
   select(n, year)
 
-t.test(may19$n, may20$n, paired = TRUE)
+t5 <- t.test(may19$n, may20$n, paired = TRUE)
 
 jun19 <- mashedpotato %>% 
   filter(month == 6, year == 2019) %>% 
@@ -218,7 +266,7 @@ jun20 <- mashedpotato %>%
   filter(month == 6, year == 2020) %>% 
   select(n, year)
 
-t.test(jun19$n, jun20$n, paired = TRUE)
+t6 <- t.test(jun19$n, jun20$n, paired = TRUE)
 
 jul19 <- mashedpotato %>% 
   filter(month == 7, year == 2019) %>% 
@@ -228,7 +276,7 @@ jul20 <- mashedpotato %>%
   filter(month == 7, year == 2020) %>% 
   select(n, year)
 
-t.test(jul19$n, jul20$n, paired = TRUE)
+t7 <- t.test(jul19$n, jul20$n, paired = TRUE)
 
 aug19 <- mashedpotato %>% 
   filter(month == 8, year == 2019) %>% 
@@ -238,7 +286,7 @@ aug20 <- mashedpotato %>%
   filter(month == 8, year == 2020) %>% 
   select(n, year)
 
-t.test(aug19$n, aug20$n, paired = TRUE)
+t8 <- t.test(aug19$n, aug20$n, paired = TRUE)
 
 sep19 <- mashedpotato %>% 
   filter(month == 9, year == 2019) %>% 
@@ -248,7 +296,7 @@ sep20 <- mashedpotato %>%
   filter(month == 9, year == 2020) %>% 
   select(n, year)
 
-t.test(sep19$n, sep20$n, paired = TRUE)
+t9 <- t.test(sep19$n, sep20$n, paired = TRUE)
 
 oct19 <- mashedpotato %>% 
   filter(month == 10, year == 2019) %>% 
@@ -258,7 +306,7 @@ oct20 <- mashedpotato %>%
   filter(month == 10, year == 2020) %>% 
   select(n, year)
 
-t.test(oct19$n, oct20$n, paired = TRUE)
+t10 <- t.test(oct19$n, oct20$n, paired = TRUE)
 
 nov19 <- mashedpotato %>% 
   filter(month == 11, year == 2019) %>% 
@@ -268,7 +316,7 @@ nov20 <- mashedpotato %>%
   filter(month == 11, year == 2020) %>% 
   select(n, year)
 
-t.test(nov19$n[1:29], nov20$n, paired = TRUE)
+t11 <- t.test(nov19$n[1:29], nov20$n, paired = TRUE)
 
 dec19 <- mashedpotato %>% 
   filter(month == 12, year == 2019) %>% 
@@ -278,10 +326,37 @@ dec20 <- mashedpotato %>%
   filter(month == 12, year == 2020) %>% 
   select(n, year)
 
-t.test(dec19$n[1:28], dec20$n, paired = TRUE)
+t12 <- t.test(dec19$n[1:28], dec20$n, paired = TRUE)
 ```
 
+To evaluate the statistical significance of these differences, below is a table of the p-value of the 12 paired t-tests and the Bonferroni-Holm corrected significance threshold.
+
+```{r t-test-kable}
+t_results <- map_df(list(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12), tidy) %>%
+  mutate(conf_int = paste(round(conf.low, 3), round(conf.high,3), sep = ", ")) %>% 
+  mutate(conf_int = paste("(", conf_int, ")", sep = "")) %>% 
+  select(statistic, p.value, conf_int)
+
+months <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+threshold <- c(0.004, "NA", 0.005, "NA", 0.005, "NA","NA","NA","NA","NA","NA",0.006)
+
+t_results <- cbind(months, t_results)
+t_results <- cbind(t_results, threshold)
+t_results <- t_results[, c(1, 2, 4, 3, 5)]
+
+kable(t_results,
+      align=c(rep('c',times=5)),
+      col.names = c("Month", "t-Statistic", "95% CI", "p-Value", "Bonferroni-Holm Threshold"),
+      digits = 3)
+```
+
+After arranging the p-value from lowest to highest, we began by comparing the lowest value of 0.0033, which is from January, to the significance threshold of 0.0042. Since the p-value is lower than the threshold, we reject the null hypothesis that there is no mean difference between the average mashed potatoes demand in January across 2019 and 2020. Next, we proceeded to compare the p-value of March, 0.0035, to the significance threshold of 0.0045 and the p-value of May, 0.0036, to the significance threshold of 0.0050. Note that the Bonferroni-Holm procedure is terminated once a p-value is above the significance threshold, therefore making the significance threshold for the rest of the hypothesis tests not available. As both p-values are lower than their respective significance threshold, we can similarly reject the null hypothesis and conclude that there is statistically significant evidence to suggest that the average mashed potatoes demand in 2019 is different from that in 2020 for the months of March and May. 
+
+Though it is interesting that the difference in demand is statistically significant for January, we are more interested in the results for March and May as those are months in 2020 where the state and national response to COVID-19 pandemic has more severely impacted the United States. To more explicitly answer the first of three research questions, mashed potatoes were indeed subject to panic buying during early stages of COVID-19.
+
+
 ## 3.2 Seasonality
+Below is the additive decomposition of the weekly demand time series. Within the figure, we are only interested in examining the seasonal component of the series. The time series shows four total spikes and two repeating patterns of seasonality trends here, keeping in mind that the data from 2019 to 2020 is now plotted on the same continuous line. 
 
 ```{r decomposition, fig.height=6, fig.width=8, fig.align='center'}
 week_cnt <- potatoes %>% 
@@ -311,7 +386,10 @@ ggplot(gather(dat, component, value, -Time), aes(Time, value)) +
   theme(plot.title=element_text(hjust=0.5))
 ```
 
+There are three major takeaways from this visualization. First, based on the x-axis value, we are able to discern that the second and forth patterns represent the surge in demand during the holiday seasons of Thanksgiving followed by Christmas. There is a higher demand for mashed potatoes in Thanksgiving than Christmas, as mashed potatoes are a popular and traditional dish for every Thanksgiving meal. Second, the decomposition identified spikes around March and may of both 2019 and 2020. Building on results of the previous section, we know that the sudden increase in demand is a result of hoarding behavior in 2010. Therefore, it is interesting that fluctuation in demand during March and May of 2019, though not striking in the exploratory visualization, is identified as a seasonal trend as well. Third, the magnitude of demand surge during COVID-19 is not more drastic than that during the holiday season. This could be a potential contributor to the fact that the March and May spikes were picked up as a seasonal trend.
+
 ## 3.3 Serial Correlation
+Beginning with the ACF plots based on the count of daily pallet output, the figures are similar across 2019 and 2020.
 
 ```{r acf, fig.height=4, fig.align='center'}
 week20 <- potatoes %>% 
@@ -338,6 +416,7 @@ par(mfrow = c(1, 2))
 acf(day19$pallet_count, main = "2019 Daily Pallet Count")
 acf(day20$pallet_count, main = "2020 Daily Pallet Count")
 ```
+For both years, the pallet output in any single day is statistically significantly correlated with the value roughly one week ago, specifically around 6, 7, or 8 days ago and the multiple of those values. Therefore, the daily demand follows a strong weekly cycle. While it is tempting to make conclusions about consumer demand based on these plots, the cyclic pattern is more likely based on shipment schedule of mashed potatoes. Grocery stores restock from these temperature-controlled warehouses based on a fixed schedule, and these visualizations reveal that they consistently pick up pallets of mashed potatoes from the warehouse in highly correlated amounts each week. Knowing that demand on a weekly basis is less susceptible to fluctuations based on the shipment schedule, plot of weekly pallet output count can be used as a better measure of overall output with less noise.
 
 ```{r acf-2, fig.height=4, fig.align='center'}
 par(mfrow = c(1, 2))
@@ -345,18 +424,39 @@ acf(week19$pallet_count, main = "2019 Weekly Pallet Count")
 acf(week20$pallet_count, main = "2020 Weekly Pallet Count")
 ```
 
+In contrast to the previous ACF plots, we see a stark difference between the weekly pallet output autocorrelation plots for 2019 and 2020. While in 2019, which is considered a normal year, the weekly pallet output is statistically significantly correlated with that of each of the past 6 weeks, in a year deeply affected by the pandemic, demand of a week is only associated with that of the past week. On one hand, the comparison unsurprisingly illustrates that there is much less information to base demand precision off of in a crisis year. On the other hand, the silver lining is that even when the consumers are irrationally engaging in hoarding behaviors, demand is still not completely random from time to time. There is still significant serial correlation of demand, though over a shorter period of time.
 
 ## 4 Discussion
 
 ## 4.1 Implications for the Supply Chain
+Consistent with past psychology research, panic buying and hoarding behavior drastically drove up mashed potatoes sales during the COVID-19 pandemic most likely due to effects of perceived scarcity and perceived lack of control. Furthermore, the analysis illustrates that consumer goods data can not only give insight into human behavior but also inform supply chain management. Results from the study have important practical implications for the supply chain, particularly for food suppliers and warehouse facilities. 
+
+First of all, the evidence of panic buying for the mashed potatoes supplier during early stages of COVID-19 should alarm suppliers to pay particular attention to pantry staples. In future crisis situations where people’s daily routines are disrupted by health or safety reasons, non-perishable pantry items including mashed potatoes may experience a large increase in demand. Though many of these crisis situations cannot be completely predicted, the spread of COVID-19 in international countries presented warnings that were ignored by the administration. This oversight caused greater, unexpected challenges in the United State’s response to the pandemic [25]. For food suppliers, it is important to monitor international market conditions and take early signs seriously to anticipate any potential fluctuation in domestic demand.
+
+Furthermore, the analysis found that during a pandemic, the surge in demand is similar in magnitude to the peak holiday season level and that demand still exhibits serial correlation. This indicates that the supply chain disruption caused by COVID-19 is a result of uncertainty rather than inability. Both food suppliers and warehouse facilities have successfully managed the peak holiday season demand of mashed potatoes year over year. The supply chain has the space and infrastructure in place to operate smoothly if given enough notice to prepare, underscoring the importance of predictive algorithms and rapid adaptations in a crisis environment. If there was an universal lesson for businesses to be learned from the COVID-19 pandemic, it is that flexibility is key in an environment where change is the only constant.
 
 ## 4.2 Strengths and Weaknesses
+The current analysis has several strengths. Firstly, there have been very few studies conducted on the effect of panic buying in COVID-19. The research on household-level purchasing dynamic conducted in the UK was the only empirical study other than news reporting that quantified the surge in COVID-19 spending [6]. The current study was able to obtain inventory data from Lineage Logistics directly, studying the effect of COVID-19 on grocery consumption through the novel perspective of the supply side. It brings much needed attention to the challenges that the supply chain faced throughout the pandemic and provides context to the research in Psychology by clearly illustrating the consequences of irrational consumer behavior on businesses.
+
+In terms of the approach, the analysis thoroughly investigated each of the three research questions using easily understandable methods like hypothesis testing and displayed most results through effective visualizations. These contribute to the high interpretability of the results that black box algorithms cannot provide. The use of hypothesis testing with Bonferroni-Holm correction in particular was rigorously justified. Thorough research was done on alternative methods such as unpaired t-test, Kolmogorov-Smirnov test and intervention analysis to ensure that conducting multiple paired t-tests is the optimal choice given the data available.
+
+More importantly, the study has tangible implications for business. While there was not enough data to build a time series forecast model, the conclusions provide strong motivations for different stakeholders within the supply chain to invest in algorithms to predict future demand. In future crises, food suppliers can reasonably anticipate a rise in demand in certain product categories. Robust prediction algorithms coupled with agile operational processes that adjust quickly as demand changes can enable businesses to be more resilient in future situations where conventional consumption patterns are disrupted.
+
+However, weaknesses exist as well. The amount of data available was limiting in terms of the analysis that can be appropriately conducted on them. While the initial file was very large with over 400,000 observations, much granularity was lost when the data were condensed into a time series of total pallet output counts to measure demand. For instance, the weekly pallet output dataset only had 105 observations summing across 2019 and 2020. Product attributes included in the dataset such as whether the products were frozen or not, total duration of stay, the number of times a pallet was picked from were also not used in the analysis. However, by nature of time series, there can only be as many observations as the units of time within an interval of interest so this was not a limitation the analysis could have overcome given the data. Nevertheless, the high volume and quality of the original data ensured that the aggregated time series provided a comprehensive view of the mashed potato demand for the Ohio-based food supplier without the issue of missing data.
+
+Another limitation lies in the generalizability of the results. As mentioned in the beginning of the analysis, the data came from a specific food supplier in a Lineage Logistics warehouse in Springfield, OH. Conclusions drawn from the study makes the assumption that the panic buying experienced by the warehouse and food supplier in question is not an extreme outlier as compared to other businesses in the US. The demand trend for mashed potatoes as a pantry staple may be very different from that of other perishable groceries such as fruits and vegetables, or even that of other non-grain foods or snacks such as nuts and candies. As well, the analysis uses data from 2019 alone as a baseline measure. In spite of these concerns, the current analysis provides interesting insights into how demand for a pantry staple shifted throughout the past years using data from a well-known food supplier. The demand for mashed potatoes examined here, though perhaps more extreme, is fairly representative of the general trend of consumption for pantry staples in the US. 
 
 ## 4.3 Future Directions
+There are numerous interesting ways that the current research can be extended in the future. A more comprehensive and generalizable study could be done given more data in terms of time and warehouse locations. With more data from previous years, we would be able to establish a more robust baseline measure of the demand trend and be more confident in drawing conclusions on the differences resulting from COVID-19. Additionally, an ARIMA model could be built to predict future demand based on results from the ACF plots when only a reasonably small portion of the entire dataset is affected by the pandemic. These predictive models would be tremendously helpful in informing labor management and energy scheduling. For instance, warehouse managers can be coordinated forklift drivers to align the time of their shifts to when demand is high, and preemptively lower air conditioning temperature prior to shipment arrival. If more inventory information is accessible from other warehouses or food suppliers in the US, the current research could also be replicated to examine whether findings are consistent across grocery product categories or geographic regions.
+
+Moreover, though there is not much past literature on the method, intervention analysis could be modified to identify the effect of imperfectly identifiable events [26]. The study cited proposed a modification of the intervention analysis to study the health and social consequences of an abrupt change in heroin availability in an environment of widespread harm reduction measures. Since COVID-19 does not have a clearly defined starting point in how it has spread to and in the US, a similar modified intervention time series analysis would be applicable. Future research can consider incorporating additional data to help date the unplanned event of interest and evaluate rival explanations of change in the time series, in order to use this method to statistically model the impact of COVID-19 in food product demand. 
+
+Finally, an event outcome analysis for the supply chain does not have to be limited to large-scale crises like COVID-19. Any circumstance that may lead to a perceived lack of control from severe weather warnings to power outages can influence consumer behavior and subsequently the supply chain. Future case studies can also focus on the impact of these events on specific locations, and even examine the geographical extent to which the supply chain is disrupted.
 
 # 5 Appendix 
 
 ## 5.1 Paired t-test Assumptions
+There are several assumptions that must be fulfilled for the paired t-test conducted to examine panic buying behavior [27]. First, the normality assumption is met. Each of the two groups in the hypothesis tests have 28 to 31 observations depending on the number of days in the month. With the large sample size, the distribution of daily pallet output is normally distributed by the Central Limit Theorem. The correlation between each paired t-test data and the normal distribution is also verified through QQ plot visualizations and there are no abnormalities. Second, there are no significant outliers in the pallet counts. Finally, the independent variables consist of two related groups or matched pairs. In the case of this analysis, data from 2019 and 2020 are paired by month of the year, to control for any influence of the time of year on demand. 
 
 ```{r QQplot, eval=FALSE}
 ggqqplot(jan19$n-jan20$n, main = "Normality Assumption is Satisfied for the January Paired t-test")
@@ -377,31 +477,54 @@ ggqqplot(dec19$n-dec20$n, main = "Normality Assumption is Satisfied for the Dece
 
 ### 5.2.1 COVID-19 Panic Buying
 
-```{r wilcoxon-test, eval=FALSE}
-wilcox.test(jan19$n, jan20$n, paired = TRUE)
+```{r wilcoxon-test}
+w1 <- wilcox.test(jan19$n, jan20$n, paired = TRUE, conf.int = TRUE, conf.level = 0.95)
 
-wilcox.test(feb19$n, feb20$n[1:28], paired = TRUE)
+w2 <- wilcox.test(feb19$n, feb20$n[1:28], paired = TRUE, conf.int = TRUE, conf.level = 0.95)
 
-wilcox.test(mar19$n, mar20$n, paired = TRUE)
+w3 <- wilcox.test(mar19$n, mar20$n, paired = TRUE, conf.int = TRUE, conf.level = 0.95)
 
-wilcox.test(apr19$n, apr20$n, paired = TRUE)
+w4 <- wilcox.test(apr19$n, apr20$n, paired = TRUE, conf.int = TRUE, conf.level = 0.95)
 
-wilcox.test(may19$n, may20$n, paired = TRUE)
+w5 <- wilcox.test(may19$n, may20$n, paired = TRUE, conf.int = TRUE, conf.level = 0.95)
 
-wilcox.test(jun19$n, jun20$n, paired = TRUE)
+w6 <- wilcox.test(jun19$n, jun20$n, paired = TRUE, conf.int = TRUE, conf.level = 0.95)
 
-wilcox.test(jul19$n, jul20$n, paired = TRUE)
+w7 <- wilcox.test(jul19$n, jul20$n, paired = TRUE, conf.int = TRUE, conf.level = 0.95)
 
-wilcox.test(aug19$n, aug20$n, paired = TRUE)
+w8 <-wilcox.test(aug19$n, aug20$n, paired = TRUE, conf.int = TRUE, conf.level = 0.95)
 
-wilcox.test(sep19$n, sep20$n, paired = TRUE)
+w9 <- wilcox.test(sep19$n, sep20$n, paired = TRUE, conf.int = TRUE, conf.level = 0.95)
 
-wilcox.test(oct19$n, oct20$n, paired = TRUE)
+w10 <- wilcox.test(oct19$n, oct20$n, paired = TRUE, conf.int = TRUE, conf.level = 0.95)
 
-wilcox.test(nov19$n[1:29], nov20$n, paired = TRUE)
+w11 <- wilcox.test(nov19$n[1:29], nov20$n, paired = TRUE, conf.int = TRUE, conf.level = 0.95)
 
-wilcox.test(dec19$n[1:28], dec20$n, paired = TRUE)
+w12 <- wilcox.test(dec19$n[1:28], dec20$n, paired = TRUE, conf.int = TRUE, conf.level = 0.95)
 ```
+
+```{r w-test-kable}
+w_results <- map_df(list(w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12), tidy) %>%
+  mutate(conf.low = format(round(conf.low, 3), nsmall = 3),
+         conf.high = format(round(conf.high, 3), nsmall = 3),
+         statistic = format(statistic, nsmall = 3)) %>% 
+  mutate(conf_int = paste(conf.low, conf.high, sep = ", ")) %>% 
+  mutate(conf_int = paste("(", conf_int, ")", sep = "")) %>% 
+  select(statistic, p.value, conf_int)
+
+months <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+wthreshold <- c(0.004, "NA", 0.005, "NA", 0.005, "NA","NA","NA","NA","NA","NA", "NA")
+
+w_results <- cbind(months, w_results)
+w_results <- cbind(w_results, wthreshold)
+w_results <- w_results[, c(1, 2, 4, 3, 5)]
+
+kable(w_results,
+      align=c(rep('c',times=5)),
+      col.names = c("Month", "T-Statistic",  "95% CI","p-Value", "Bonferroni-Holm Threshold"),
+      digits = 3)
+```
+The Wilcoxon matched-pairs signed rank test results are very similar to that of the paired t-tests. Again using a Bonferroni-Holm corrected significance threshold, January, May are the months with statistically significant differences in mashed potatoes demand across 2019 and 2020. Though the p-value for March (0.006) is not statistically significant, it is very close to the threshold of 0.005. This further validates our conclusion that panic buying was indeed evident in early stages of COVID-19. Because there are less than 50 finite values and there are ties, R cannot calculate an exact p-value [28]. 
 
 ### 5.2.2 Serial Correlation
 
@@ -412,4 +535,4 @@ week20postcovid <- week20 %>%
 acf(week20postcovid$pallet_count, main = "ACF Plot for Weekly Pallet Count After May 2020")
 ```
 
-
+Looking at the ACF plot including data after May 2020, we see that weekly demand is statistically significantly correlated with demand at most 7 weeks ago. This result is more similar to that of 2019 than that of 2020, which supports our conclusion that the volatility in demand and lessened information available for prediction for 2020 is driven by the panic buying in early stages of COVID-19.

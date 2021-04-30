@@ -71,7 +71,7 @@ mashedpotato <- all_pallets %>%
 
 ## COVID Panic Buying
 
-```{r t-test, eval=FALSE}
+```{r t-test}
 jan19 <- mashedpotato %>% 
   filter(month == 1, year == 2019) %>% 
   select(n, year)
@@ -80,7 +80,7 @@ jan20 <- mashedpotato %>%
   filter(month == 1, year == 2020) %>% 
   select(n, year)
 
-t.test(jan19$n, jan20$n, paired = TRUE)
+t1 <- t.test(jan19$n, jan20$n, paired = TRUE)
 
 feb19 <- mashedpotato %>% 
   filter(month == 2, year == 2019) %>% 
@@ -90,7 +90,7 @@ feb20 <- mashedpotato %>%
   filter(month == 2, year == 2020) %>% 
   select(n, year)
 
-t.test(feb19$n, feb20$n[1:28], paired = TRUE)
+t2 <- t.test(feb19$n, feb20$n[1:28], paired = TRUE)
 
 mar19 <- mashedpotato %>% 
   filter(month == 3, year == 2019) %>% 
@@ -100,7 +100,7 @@ mar20 <- mashedpotato %>%
   filter(month == 3, year == 2020) %>% 
   select(n, year)
 
-t.test(mar19$n, mar20$n, paired = TRUE)
+t3 <- t.test(mar19$n, mar20$n, paired = TRUE)
 
 apr19 <- mashedpotato %>% 
   filter(month == 4, year == 2019) %>% 
@@ -194,7 +194,7 @@ t.test(dec19$n[1:28], dec20$n, paired = TRUE)
 ```
 
 
-```{r kable, eval=FALSE}
+```{r kable}
 tab <- map_df(list(t1, t2, t3), tidy) %>%
   rename(t_statistic = statistic,
          p_value = p.value,
