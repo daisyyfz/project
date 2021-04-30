@@ -536,3 +536,63 @@ acf(week20postcovid$pallet_count, main = "ACF Plot for Weekly Pallet Count After
 ```
 
 Looking at the ACF plot including data after May 2020, we see that weekly demand is statistically significantly correlated with demand at most 7 weeks ago. This result is more similar to that of 2019 than that of 2020, which supports our conclusion that the volatility in demand and lessened information available for prediction for 2020 is driven by the panic buying in early stages of COVID-19.
+
+## 5.3 References
+[1] https://cnr.ncsu.edu/news/2020/05/coronavirus-toilet-paper-shortage/
+
+[2] https://theconversation.com/coronavirus-why-people-are-panic-buying-loo-roll-and-how-to-stop-it-133115
+
+[3] https://www.researchgate.net/publication/225148872_The_effects_of_perceived_scarcity_on_consumers%27_processing_of_price_information
+
+[4] https://www.tandfonline.com/doi/abs/10.1080/00223980.2020.1822770
+
+[5] https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7202808/
+
+[6] https://voxeu.org/article/spending-dynamics-and-panic-buying-during-covid-19-first-wave
+
+[7] https://www.ajmc.com/view/a-timeline-of-covid19-developments-in-2020
+
+[8] https://www.daytondailynews.com/news/local/timeline-coronavirus-prompts-orders-changing-everyday-life-ohio/gpnVSADPxZxMltlDVyqKEP/
+
+[9] https://www.technologynetworks.com/informatics/articles/paired-vs-unpaired-t-test-differences-assumptions-and-hypotheses-330826
+
+[10] https://en.wikipedia.org/wiki/Multiple_comparisons_problem
+
+[11] https://en.wikipedia.org/wiki/Family-wise_error_rate
+
+[12] https://www.jstor.org/stable/4615733%0A?seq=1
+
+[13] https://www.sciencedirect.com/topics/mathematics/bonferroni-method
+
+[14] https://towardsdatascience.com/time-series-introduction-7484bc25739a
+
+[15] https://medium.com/analytics-vidhya/interrupted-time-series-analysis-10d73659c6af
+
+[16] https://online.stat.psu.edu/stat510/lesson/9/9.2
+
+[17] https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test
+
+[18] https://www.statisticshowto.com/wilcoxon-signed-rank-test/
+
+[19] https://sphweb.bumc.bu.edu/otlt/mph-modules/bs/bs704_probability/BS704_Probability12.html
+
+[20] https://otexts.com/fpp2/decomposition.html 
+
+[21] https://amstat.tandfonline.com/doi/abs/10.1080/01621459.1976.10481532
+
+[22] https://otexts.com/fpp2/components.html 
+
+[23] https://www.youtube.com/watch?v=5Q5p6eVM7zM&t=23s
+
+[24] https://towardsdatascience.com/significance-of-acf-and-pacf-plots-in-time-series-analysis-2fa11a5d10a8
+
+[25] https://www.washingtonpost.com/politics/2020/03/23/apparently-trump-ignored-early-coronavirus-warnings-that-has-consequences/
+
+[26] https://bmcmedresmethodol.biomedcentral.com/articles/10.1186/1471-2288-6-16
+
+[27] https://www.datanovia.com/en/lessons/t-test-assumptions/paired-t-test-assumptions/ 
+
+[28] http://courses.atlas.illinois.edu/spring2016/STAT/STAT200/RProgramming/NonParametricStats.html
+
+
+
